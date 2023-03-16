@@ -1,0 +1,7 @@
+nipype>=1.8.5
+bids
+templateflow>=23.0.0
+docopt>=0.6.2
+nibabel>=5.0.1
+NetworkX==2.6
+-e git+https://github.com/jrdalenberg/HD-BET.git#egg=hd-bet
