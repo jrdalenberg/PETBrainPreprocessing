@@ -168,7 +168,7 @@ def pet_preprocessing_workflow(participant_id: str,
     
     # Apply mask rotation to pet image
     workflow.connect(inputnode, 'pet_image', apply_first_pass, 'input_image')
-    workflow.connect(inputnode, 'template', apply_first_pass, 'reference_image')
+    workflow.connect(inputnode, 'T1_resampled_template', apply_first_pass, 'reference_image')
     workflow.connect(coregister_first_pass, 'composite_transform', apply_first_pass, 'transforms')
 
     # Register cropped PET to MR
