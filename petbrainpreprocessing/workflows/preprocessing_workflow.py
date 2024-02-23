@@ -8,7 +8,7 @@ from nipype import Workflow, Node
 
 from os.path import join as opj
 
-from ..interfaces.hdbet import HDBet
+from ..interfaces.synthstrip import Synthstrip
 
 CommandLine.set_default_terminal_output('allatonce')
 fsl.FSLCommand.set_default_output_type('NIFTI_GZ')
@@ -55,10 +55,9 @@ def pet_preprocessing_workflow(participant_id: str,
     crop.inputs.padding = 10
 
     # Skull strip PET image
-    hdbet = Node(HDBet(), name = "skull_strip")
-    hdbet.inputs.device = 'cpu'
-    hdbet.inputs.mode = 'fast'
-    hdbet.inputs.tta = '0'
+    synthstrip = Node(Synthstrip(), name = "skull_strip")
+    synthstrip.inputs.use_gpu = False
+    synthstrip.inputs.no_csf = False
 
     # Rigister cropped PET to MR space, first pass
     coregister_first_pass = Node(ants.Registration(), name='coreg_first_pass')
@@ -158,16 +157,16 @@ def pet_preprocessing_workflow(participant_id: str,
     workflow.connect(inputnode, 'pet_image', crop, 'in_file')
 
     # Skull strip PET image
-    workflow.connect(crop, 'out_file', hdbet, 'in_file')
-    workflow.connect(inputnode, 'num_threads', hdbet, 'num_threads')
+    workflow.connect(crop, 'out_file', synthstrip, 'in_file')
+    # workflow.connect(inputnode, 'num_threads', synthstrip, 'num_threads') # TODO: Not yet implemented
 
     # Register masks
     workflow.connect(inputnode, 'T1_mask', coregister_first_pass, 'fixed_image')
-    workflow.connect(hdbet, 'mask_file', coregister_first_pass, 'moving_image')
+    workflow.connect(synthstrip, 'mask_file', coregister_first_pass, 'moving_image')
     workflow.connect(inputnode, 'num_threads', coregister_first_pass, 'num_threads')
     
     # Apply mask rotation to pet image
-    workflow.connect(inputnode, 'pet_image', apply_first_pass, 'input_image')
+    workflow.connect(synthstrip, 'out_file', apply_first_pass, 'input_image')
     workflow.connect(inputnode, 'T1_resampled_template', apply_first_pass, 'reference_image')
     workflow.connect(coregister_first_pass, 'composite_transform', apply_first_pass, 'transforms')
 
@@ -204,7 +203,7 @@ def pet_preprocessing_workflow(participant_id: str,
     workflow.connect(inputnode, 'results_folder', datasink, 'base_directory')
     workflow.connect(inputnode, 'participant_id', datasink, 'container')
     workflow.connect(crop, 'out_file', datasink, 'convert.pet_crop')
-    workflow.connect(hdbet, 'out_file', datasink, 'convert.pet_skullstrip')
+    workflow.connect(synthstrip, 'out_file', datasink, 'convert.pet_skullstrip')
     workflow.connect(coregister_first_pass, 'warped_image', datasink, 'coreg.mask')
     workflow.connect(coregister_second_pass, 'warped_image', datasink, 'coreg.pet')
     workflow.connect(inputnode, 'T1_resampled_template', datasink, 'coreg.T1_resampled')
