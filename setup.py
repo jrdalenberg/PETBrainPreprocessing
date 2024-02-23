@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='PET Brain Preprocessing',
-    version='0.1.0',    
+    version='0.1.1',    
     description='Robust Nipype pipeline for preprocessing PET BIDS brain \
                  data. Initially developed for 18F FDG PET brain images \
                  acquired by project NEMO at the Dep of Neurology, \
@@ -20,7 +20,6 @@ setup(
                       'nibabel>=5.0.1',
                       'NetworkX==2.6',
                       ],
-    dependency_links = ['git+https://github.com/jrdalenberg/HD-BET.git#egg=hd-bet'],
     scripts=['petbrainpreprocessing/pet_brain_preprocessing.py'],
     classifiers=[
         'Development Status :: 1 - Concept',
