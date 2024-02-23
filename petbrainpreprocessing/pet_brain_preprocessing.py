@@ -1,7 +1,7 @@
 """
 ./pet_brain_preprocessing.py
 
-Function that 
+Function that handles the inputs for preprocessing pet images.
 
 Usage:
   pet_brain_preprocessing.py <bids_dir> <output_dir> <anat_derivatives_dir> --participant-label PARTICIPANT_LABEL [--nprocs NPROCS] [--fwhm FWHM] [--work-dir WORK_DIR]
