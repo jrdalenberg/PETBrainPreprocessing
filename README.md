@@ -15,6 +15,29 @@ Minimal preprocessing includes (1) _coregistration_ and (2) _normalization_ of P
 - [ANTs 2.3.5](http://stnava.github.io/ANTs/)
 - [Synthstrip-docker](https://surfer.nmr.mgh.harvard.edu/docs/synthstrip/). Also see [(Hoopes, et al., 2022)](https://doi.org/10.1016/j.neuroimage.2022.119474).
 
+# Running the pipeline
+```
+$ pip install git+https://github.com/jrdalenberg/PETBrainPreprocessing.git
+$ pet_brain_preprocessing -h
+
+usage: pet_brain_preprocessing [-h] --participant-label PARTICIPANT_LABEL [--nprocs NPROCS] [--fwhm FWHM] [--work-dir WORK_DIR] bids_dir output_dir anat_derivatives_dir
+
+Function that handles the inputs for preprocessing pet images.
+
+positional arguments:
+  bids_dir              Path to the BIDS dataset directory.
+  output_dir            Output directory.
+  anat_derivatives_dir  fMRIPrep Anatomical derivatives directory.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --participant-label PARTICIPANT_LABEL
+                        A space delimited list of participant identifiers or a single identifier (the sub- prefix can be removed).
+  --nprocs NPROCS       Maximum number of threads across all processes.
+  --fwhm FWHM           The full width at half maximum smoothing kernel.
+  --work-dir WORK_DIR   Path where intermediate results should be stored.
+
+```
 
 # TODO
 - Make outputs BIDS compatible.
