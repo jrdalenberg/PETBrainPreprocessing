@@ -1,26 +1,7 @@
-"""
-./pet_brain_preprocessing.py
-
-Function that handles the inputs for preprocessing pet images.
-
-Usage:
-  pet_brain_preprocessing.py <bids_dir> <output_dir> <anat_derivatives_dir> --participant-label PARTICIPANT_LABEL [--nprocs NPROCS] [--fwhm FWHM] [--work-dir WORK_DIR]
-  pet_brain_preprocessing.py (-h | --help)
-  pet_brain_preprocessing.py (-v | --version)
-
-Options:
-  -h --help             Show this screen.
-  -v --version          Show version.
-  --participant-label   A space delimited list of participant identifiers or a single identifier (the sub- prefix can be removed).
-  --nprocs NPROCS       Maximum number of threads across all processes.
-  --fwhm FWHM           The full width at half maximum smoothing kernel.
-  --work-dir WORK_DIR   Path where intermediate results should be stored.
-"""
-
 from petbrainpreprocessing.workflows.preprocessing_workflow import \
     pet_preprocessing_workflow
 from templateflow import api as tflow
-from docopt import docopt
+import argparse
 from os import makedirs
 from os.path import exists, isfile
 from os.path import join as opj
@@ -29,38 +10,59 @@ from nibabel import load, save
 from multiprocessing import cpu_count
 
 
-Version = 'PET Brain Preprocessing v0.1.0 - March 14th, 2023'
-
-
-if __name__ == '__main__':
-    args = docopt(__doc__, version=Version)
-
-    participant = f"sub-{args['PARTICIPANT_LABEL']}"
+def main():
+    parser = argparse.ArgumentParser(
+        description="Function that handles the inputs for preprocessing pet images."
+    )
+    parser.add_argument("bids_dir", 
+                        help="Path to the BIDS dataset directory.")
+    parser.add_argument("output_dir", 
+                        help="Output directory.")
+    parser.add_argument("anat_derivatives_dir", 
+                        help="fMRIPrep Anatomical derivatives directory.")
+    parser.add_argument("--participant-label",
+                        required=True,
+                        help="A space delimited list of participant identifiers or \
+                            a single identifier (the sub- prefix can be removed).",
+    )
+    parser.add_argument("--nprocs",
+                        type=int,
+                        help="Maximum number of threads across all processes.",
+    )
+    parser.add_argument("--fwhm",
+                        type=float,
+                        help="The full width at half maximum smoothing kernel.",
+    )
+    parser.add_argument("--work-dir",
+                        help="Path where intermediate results should be stored.",
+    )
+    args = parser.parse_args()
 
     # Check arguments
-    if not exists(args['<anat_derivatives_dir>']):
+    participant = f"sub-{args.participant_label}"
+    if not exists(args.anat_derivatives_dir):
         raise FileNotFoundError(f"ERROR. Cannot find fMRIPrep derivatives \
-            folder {args['<anat_derivatives_dir>']}.")
+            folder {args.anat_derivatives_dir}.")
 
     participant_fmriprep_anat_folder = \
-        opj(args['<anat_derivatives_dir>'], participant, "anat")
+        opj(args.anat_derivatives_dir, participant, "anat")
     
     if not exists(participant_fmriprep_anat_folder):
         raise FileNotFoundError(f"ERROR. Cannot find fMRIPrep derivatives \
             participant_folder {participant_fmriprep_anat_folder}.")
 
-    participant_bids_folder = opj(args['<bids_dir>'], participant)
+    participant_bids_folder = opj(args.bids_dir, participant)
 
     if not exists(participant_bids_folder):
         raise FileNotFoundError(f"ERROR. Cannot find BIDS participant_folder \
             {participant_bids_folder}.")
 
     # Make sure the workdir exists
-    if args['--work-dir']:
-        makedirs(args['--work-dir'], exist_ok=True)
+    if args.work_dir is not None:
+        makedirs(args.work_dir, exist_ok=True)
 
     # Make sure the output dir exists
-    makedirs(args['<output_dir>'], exist_ok=True)
+    makedirs(args.output_dir, exist_ok=True)
 
     # Fetch files
     anat_file_path = opj(participant_fmriprep_anat_folder,
@@ -95,27 +97,31 @@ if __name__ == '__main__':
     save(T1w_resampled_img, T1w_resampled_path)
     
     # Set nprocs to max if not specified
-    if args['--nprocs'] == None:
-        args['--nprocs'] = cpu_count()
+    if args.nprocs == None:
+        args.nprocs = cpu_count()
 
     # Set up coregistration + normalization pipeline
-    wf = pet_preprocessing_workflow(participant,  args['--work-dir'], args['--fwhm']!=None)
-    wf.inputs.input_files.results_folder = args['<output_dir>']
+    wf = pet_preprocessing_workflow(participant,  args.work_dir, args.fwhm != None)
+    wf.inputs.input_files.results_folder = args.output_dir
     wf.inputs.input_files.T1 = anat_file_path
     wf.inputs.input_files.T1_mask = anat_mask_file_path
     wf.inputs.input_files.T1_resampled_template = T1w_resampled_path
     wf.inputs.input_files.participant_id = participant
     wf.inputs.input_files.template = template
     wf.inputs.input_files.pet_image =  pet_file_path
-    wf.inputs.input_files.num_threads = int(args['--nprocs'])
+    wf.inputs.input_files.num_threads = int(args.nprocs)
     wf.inputs.input_files.transform = anat2mni_matrix
 
     # Optional smoothing
-    if args['--fwhm'] is not None:
-        wf.inputs.input_files.smooth_fwhm = int(args['--fwhm'])
+    if args.fwhm is not None:
+        wf.inputs.input_files.smooth_fwhm = int(args.fwhm)
 
     # Write pipeline graph
     wf.write_graph(graph2use='flat', simple_form=True)
 
     # Run pipeline
-    wf.run('MultiProc', plugin_args={'n_procs': int(args['--nprocs'])})
+    wf.run('MultiProc', plugin_args={'n_procs': int(args.nprocs)})
+
+
+if __name__ == '__main__':
+    main()
